@@ -1,0 +1,325 @@
+%global certbot_ver 5.6.0
+
+# -----------------------------------------------------------------------
+# Python interpreter selection
+#
+# certbot 5.x requires Python >= 3.10.
+#   EL7  : Python 3.10+ is NOT in standard repos — build will fail unless
+#           python3.10+ is installed from a third-party repo (e.g. IUS).
+#           EL7 is listed for completeness; skip that chroot in practice.
+#   EL8  : python3.11 is in AppStream — set as the interpreter explicitly.
+#   EL9+ : system python3 is 3.11+ — use it directly.
+#   Fedora: system python3 is 3.12+ — fine.
+# -----------------------------------------------------------------------
+%if 0%{?rhel} && 0%{?rhel} <= 8
+%global certbot_python  python3.11
+%global certbot_pybin   /usr/bin/python3.11
+%else
+%global certbot_python  python3
+%global certbot_pybin   %{__python3}
+%endif
+
+# -----------------------------------------------------------------------
+# Source tarballs — certbot core, acme library, and all official plugins
+# -----------------------------------------------------------------------
+Name:           certbot
+Version:        %{certbot_ver}
+Release:        1%{?dist}
+Summary:        EFF ACME client with all official plugins
+License:        Apache-2.0
+URL:            https://certbot.eff.org
+BuildArch:      noarch
+
+Source0:  https://files.pythonhosted.org/packages/source/c/certbot/certbot-%{certbot_ver}.tar.gz
+Source1:  https://files.pythonhosted.org/packages/source/a/acme/acme-%{certbot_ver}.tar.gz
+Source2:  https://files.pythonhosted.org/packages/source/c/certbot-apache/certbot_apache-%{certbot_ver}.tar.gz
+Source3:  https://files.pythonhosted.org/packages/source/c/certbot-nginx/certbot_nginx-%{certbot_ver}.tar.gz
+Source4:  https://files.pythonhosted.org/packages/source/c/certbot-dns-cloudflare/certbot_dns_cloudflare-%{certbot_ver}.tar.gz
+Source5:  https://files.pythonhosted.org/packages/source/c/certbot-dns-digitalocean/certbot_dns_digitalocean-%{certbot_ver}.tar.gz
+Source6:  https://files.pythonhosted.org/packages/source/c/certbot-dns-dnsimple/certbot_dns_dnsimple-%{certbot_ver}.tar.gz
+Source7:  https://files.pythonhosted.org/packages/source/c/certbot-dns-dnsmadeeasy/certbot_dns_dnsmadeeasy-%{certbot_ver}.tar.gz
+Source8:  https://files.pythonhosted.org/packages/source/c/certbot-dns-gehirn/certbot_dns_gehirn-%{certbot_ver}.tar.gz
+Source9:  https://files.pythonhosted.org/packages/source/c/certbot-dns-google/certbot_dns_google-%{certbot_ver}.tar.gz
+Source10: https://files.pythonhosted.org/packages/source/c/certbot-dns-linode/certbot_dns_linode-%{certbot_ver}.tar.gz
+Source11: https://files.pythonhosted.org/packages/source/c/certbot-dns-luadns/certbot_dns_luadns-%{certbot_ver}.tar.gz
+Source12: https://files.pythonhosted.org/packages/source/c/certbot-dns-nsone/certbot_dns_nsone-%{certbot_ver}.tar.gz
+Source13: https://files.pythonhosted.org/packages/source/c/certbot-dns-ovh/certbot_dns_ovh-%{certbot_ver}.tar.gz
+Source14: https://files.pythonhosted.org/packages/source/c/certbot-dns-rfc2136/certbot_dns_rfc2136-%{certbot_ver}.tar.gz
+Source15: https://files.pythonhosted.org/packages/source/c/certbot-dns-route53/certbot_dns_route53-%{certbot_ver}.tar.gz
+Source16: https://files.pythonhosted.org/packages/source/c/certbot-dns-sakuracloud/certbot_dns_sakuracloud-%{certbot_ver}.tar.gz
+
+# -----------------------------------------------------------------------
+# Build dependencies
+# -----------------------------------------------------------------------
+BuildRequires: %{certbot_python}
+BuildRequires: %{certbot_python}-pip
+BuildRequires: %{certbot_python}-hatchling
+BuildRequires: %{certbot_python}-setuptools
+
+# -----------------------------------------------------------------------
+# Runtime — core deps available as system RPMs on EL8+/Fedora
+# -----------------------------------------------------------------------
+Requires: %{certbot_python}
+Requires: %{certbot_python}-cryptography  >= 43.0.0
+Requires: %{certbot_python}-pyOpenSSL     >= 25.0.0
+Requires: %{certbot_python}-josepy        >= 2.0.0
+Requires: %{certbot_python}-configobj     >= 5.0.6
+Requires: %{certbot_python}-distro        >= 1.7.0
+Requires: %{certbot_python}-parsedatetime >= 2.6
+Requires: %{certbot_python}-pyparsing     >= 3.0.0
+Requires: %{certbot_python}-requests
+Requires: %{certbot_python}-dns           >= 2.6.1
+Requires: %{certbot_python}-boto3         >= 1.20.34
+
+# -----------------------------------------------------------------------
+# Plugin-specific deps that may need to come from EPEL or PyPI:
+#   DNS-Cloudflare   : python3-cloudflare >= 4.0
+#   DNS-DigitalOcean : python3-digitalocean >= 1.15.0
+#   DNS-Lexicon plugins (dnsimple, dnsmadeeasy, gehirn, linode, luadns,
+#                        nsone, ovh, sakuracloud):
+#                      python3-dns-lexicon >= 3.14.1
+#   DNS-Google       : python3-google-api-python-client >= 1.6.5
+#                      python3-google-auth >= 2.16.0
+#   Apache plugin    : python3-augeas
+# These are listed as Recommends so dnf pulls them automatically
+# when the packages are available, but installation does not fail
+# on systems where they are absent.
+# -----------------------------------------------------------------------
+Recommends: %{certbot_python}-augeas
+Recommends: %{certbot_python}-dns-lexicon >= 3.14.1
+Recommends: %{certbot_python}-google-api-python-client >= 1.6.5
+Recommends: %{certbot_python}-google-auth >= 2.16.0
+
+# -----------------------------------------------------------------------
+# Provides — virtual package names so other specs can depend on any
+# of the former fragmented package names and still get resolved.
+# -----------------------------------------------------------------------
+Provides: certbot              = %{version}-%{release}
+Provides: python3-certbot      = %{version}-%{release}
+Provides: certbot-apache       = %{version}-%{release}
+Provides: python3-certbot-apache = %{version}-%{release}
+Provides: certbot-nginx        = %{version}-%{release}
+Provides: python3-certbot-nginx = %{version}-%{release}
+Provides: certbot-dns-cloudflare   = %{version}-%{release}
+Provides: certbot-dns-digitalocean = %{version}-%{release}
+Provides: certbot-dns-dnsimple     = %{version}-%{release}
+Provides: certbot-dns-dnsmadeeasy  = %{version}-%{release}
+Provides: certbot-dns-gehirn       = %{version}-%{release}
+Provides: certbot-dns-google       = %{version}-%{release}
+Provides: certbot-dns-linode       = %{version}-%{release}
+Provides: certbot-dns-luadns       = %{version}-%{release}
+Provides: certbot-dns-nsone        = %{version}-%{release}
+Provides: certbot-dns-ovh          = %{version}-%{release}
+Provides: certbot-dns-rfc2136      = %{version}-%{release}
+Provides: certbot-dns-route53      = %{version}-%{release}
+Provides: certbot-dns-sakuracloud  = %{version}-%{release}
+Provides: python3-certbot-dns-cloudflare   = %{version}-%{release}
+Provides: python3-certbot-dns-digitalocean = %{version}-%{release}
+Provides: python3-certbot-dns-dnsimple     = %{version}-%{release}
+Provides: python3-certbot-dns-dnsmadeeasy  = %{version}-%{release}
+Provides: python3-certbot-dns-gehirn       = %{version}-%{release}
+Provides: python3-certbot-dns-google       = %{version}-%{release}
+Provides: python3-certbot-dns-linode       = %{version}-%{release}
+Provides: python3-certbot-dns-luadns       = %{version}-%{release}
+Provides: python3-certbot-dns-nsone        = %{version}-%{release}
+Provides: python3-certbot-dns-ovh          = %{version}-%{release}
+Provides: python3-certbot-dns-rfc2136      = %{version}-%{release}
+Provides: python3-certbot-dns-route53      = %{version}-%{release}
+Provides: python3-certbot-dns-sakuracloud  = %{version}-%{release}
+Provides: python3-acme                     = %{version}-%{release}
+Provides: acme                             = %{version}-%{release}
+
+# -----------------------------------------------------------------------
+# Obsoletes — replaces all pre-existing fragmented packages
+# No version qualifier = obsoletes every version ever released
+# -----------------------------------------------------------------------
+Obsoletes: python3-certbot
+Obsoletes: certbot-apache
+Obsoletes: python3-certbot-apache
+Obsoletes: certbot-nginx
+Obsoletes: python3-certbot-nginx
+Obsoletes: certbot-dns-cloudflare
+Obsoletes: certbot-dns-digitalocean
+Obsoletes: certbot-dns-dnsimple
+Obsoletes: certbot-dns-dnsmadeeasy
+Obsoletes: certbot-dns-gehirn
+Obsoletes: certbot-dns-google
+Obsoletes: certbot-dns-linode
+Obsoletes: certbot-dns-luadns
+Obsoletes: certbot-dns-nsone
+Obsoletes: certbot-dns-ovh
+Obsoletes: certbot-dns-rfc2136
+Obsoletes: certbot-dns-route53
+Obsoletes: certbot-dns-sakuracloud
+Obsoletes: python3-certbot-dns-cloudflare
+Obsoletes: python3-certbot-dns-digitalocean
+Obsoletes: python3-certbot-dns-dnsimple
+Obsoletes: python3-certbot-dns-dnsmadeeasy
+Obsoletes: python3-certbot-dns-gehirn
+Obsoletes: python3-certbot-dns-google
+Obsoletes: python3-certbot-dns-linode
+Obsoletes: python3-certbot-dns-luadns
+Obsoletes: python3-certbot-dns-nsone
+Obsoletes: python3-certbot-dns-ovh
+Obsoletes: python3-certbot-dns-rfc2136
+Obsoletes: python3-certbot-dns-route53
+Obsoletes: python3-certbot-dns-sakuracloud
+Obsoletes: python3-acme
+Obsoletes: acme
+Obsoletes: certbot-auto
+
+%description
+Certbot is the EFF's ACME client for automatically obtaining and renewing
+TLS certificates from Let's Encrypt and any other ACME-compliant CA.
+
+This package bundles certbot plus every official plugin in a single RPM:
+  - certbot-apache   (Apache httpd integration)
+  - certbot-nginx    (nginx integration)
+  - certbot-dns-cloudflare, -digitalocean, -dnsimple, -dnsmadeeasy,
+    -gehirn, -google, -linode, -luadns, -nsone, -ovh, -rfc2136,
+    -route53, -sakuracloud   (DNS-01 challenge plugins)
+
+It also obsoletes and replaces all individual certbot-* and
+python3-certbot-* packages so a plain "dnf install certbot" is all
+that is ever needed.
+
+%prep
+# Main certbot source becomes the working directory
+%setup -q -n certbot-%{certbot_ver}
+
+# Extract all other sources into _builddir side-by-side
+cd %{_builddir}
+for f in \
+  %{SOURCE1}  %{SOURCE2}  %{SOURCE3}  %{SOURCE4}  \
+  %{SOURCE5}  %{SOURCE6}  %{SOURCE7}  %{SOURCE8}  \
+  %{SOURCE9}  %{SOURCE10} %{SOURCE11} %{SOURCE12} \
+  %{SOURCE13} %{SOURCE14} %{SOURCE15} %{SOURCE16}; do
+  tar xzf "$f"
+done
+
+%build
+# Build each package (hatchling backend, no isolation needed since
+# hatchling is listed as a BuildRequires)
+install_order=(
+  acme-%{certbot_ver}
+  certbot-%{certbot_ver}
+  certbot_apache-%{certbot_ver}
+  certbot_nginx-%{certbot_ver}
+  certbot_dns_cloudflare-%{certbot_ver}
+  certbot_dns_digitalocean-%{certbot_ver}
+  certbot_dns_dnsimple-%{certbot_ver}
+  certbot_dns_dnsmadeeasy-%{certbot_ver}
+  certbot_dns_gehirn-%{certbot_ver}
+  certbot_dns_google-%{certbot_ver}
+  certbot_dns_linode-%{certbot_ver}
+  certbot_dns_luadns-%{certbot_ver}
+  certbot_dns_nsone-%{certbot_ver}
+  certbot_dns_ovh-%{certbot_ver}
+  certbot_dns_rfc2136-%{certbot_ver}
+  certbot_dns_route53-%{certbot_ver}
+  certbot_dns_sakuracloud-%{certbot_ver}
+)
+
+for pkg_dir in "${install_order[@]}"; do
+  pushd %{_builddir}/${pkg_dir}
+  %{certbot_pybin} -m pip wheel --no-deps --no-build-isolation \
+    --wheel-dir %{_builddir}/wheels .
+  popd
+done
+
+%install
+# Install all built wheels into buildroot
+for wheel in %{_builddir}/wheels/*.whl; do
+  %{certbot_pybin} -m pip install \
+    --no-deps \
+    --no-build-isolation \
+    --root    %{buildroot} \
+    --prefix  %{_prefix} \
+    "$wheel"
+done
+
+# Ensure the binary is executable
+chmod 0755 %{buildroot}%{_bindir}/certbot
+
+# Install renewal systemd timer and service if present
+# (certbot ships cli-only; timer is typically managed by the distro's
+#  certbot-renew package — we create a minimal one here)
+install -d %{buildroot}%{_unitdir}
+cat > %{buildroot}%{_unitdir}/certbot-renew.service <<'UNIT'
+[Unit]
+Description=Certbot renewal
+Documentation=https://certbot.eff.org/docs
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew -q
+PrivateTmp=true
+UNIT
+
+cat > %{buildroot}%{_unitdir}/certbot-renew.timer <<'UNIT'
+[Unit]
+Description=Twice-daily certbot renewal check
+[Timer]
+OnCalendar=*-*-* 00,12:00:00
+RandomizedDelaySec=43200
+Persistent=true
+[Install]
+WantedBy=timers.target
+UNIT
+
+%post
+# Enable renewal timer on fresh install
+if [ $1 -eq 1 ]; then
+  systemctl enable --now certbot-renew.timer &>/dev/null || true
+fi
+
+%preun
+if [ $1 -eq 0 ]; then
+  systemctl disable --now certbot-renew.timer &>/dev/null || true
+fi
+
+%files
+%license LICENSE.txt
+%doc README.rst
+%{_bindir}/certbot
+%{python3_sitelib}/certbot/
+%{python3_sitelib}/certbot-*.dist-info/
+%{python3_sitelib}/acme/
+%{python3_sitelib}/acme-*.dist-info/
+%{python3_sitelib}/certbot_apache/
+%{python3_sitelib}/certbot_apache-*.dist-info/
+%{python3_sitelib}/certbot_nginx/
+%{python3_sitelib}/certbot_nginx-*.dist-info/
+%{python3_sitelib}/certbot_dns_cloudflare/
+%{python3_sitelib}/certbot_dns_cloudflare-*.dist-info/
+%{python3_sitelib}/certbot_dns_digitalocean/
+%{python3_sitelib}/certbot_dns_digitalocean-*.dist-info/
+%{python3_sitelib}/certbot_dns_dnsimple/
+%{python3_sitelib}/certbot_dns_dnsimple-*.dist-info/
+%{python3_sitelib}/certbot_dns_dnsmadeeasy/
+%{python3_sitelib}/certbot_dns_dnsmadeeasy-*.dist-info/
+%{python3_sitelib}/certbot_dns_gehirn/
+%{python3_sitelib}/certbot_dns_gehirn-*.dist-info/
+%{python3_sitelib}/certbot_dns_google/
+%{python3_sitelib}/certbot_dns_google-*.dist-info/
+%{python3_sitelib}/certbot_dns_linode/
+%{python3_sitelib}/certbot_dns_linode-*.dist-info/
+%{python3_sitelib}/certbot_dns_luadns/
+%{python3_sitelib}/certbot_dns_luadns-*.dist-info/
+%{python3_sitelib}/certbot_dns_nsone/
+%{python3_sitelib}/certbot_dns_nsone-*.dist-info/
+%{python3_sitelib}/certbot_dns_ovh/
+%{python3_sitelib}/certbot_dns_ovh-*.dist-info/
+%{python3_sitelib}/certbot_dns_rfc2136/
+%{python3_sitelib}/certbot_dns_rfc2136-*.dist-info/
+%{python3_sitelib}/certbot_dns_route53/
+%{python3_sitelib}/certbot_dns_route53-*.dist-info/
+%{python3_sitelib}/certbot_dns_sakuracloud/
+%{python3_sitelib}/certbot_dns_sakuracloud-*.dist-info/
+%{_unitdir}/certbot-renew.service
+%{_unitdir}/certbot-renew.timer
+
+%changelog
+* Thu May 22 2026 Jason Hempstead <git-admin@casjaysdev.pro> - 5.6.0-1
+- Initial CasjaysDev bundled release
+- Bundles certbot core, acme, apache, nginx, and all 13 DNS plugins
+- Obsoletes all fragmented certbot-* and python3-certbot-* packages
