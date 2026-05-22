@@ -241,9 +241,7 @@ done
 # Ensure the binary is executable
 chmod 0755 %{buildroot}%{_bindir}/certbot
 
-# Install renewal systemd timer and service if present
-# (certbot ships cli-only; timer is typically managed by the distro's
-#  certbot-renew package — we create a minimal one here)
+# Install renewal systemd timer and service
 install -d %{buildroot}%{_unitdir}
 cat > %{buildroot}%{_unitdir}/certbot-renew.service <<'UNIT'
 [Unit]
