@@ -28,8 +28,6 @@ Release:        1%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
-BuildArch:      noarch
-
 Source0:  https://files.pythonhosted.org/packages/source/c/certbot/certbot-%{certbot_ver}.tar.gz
 Source1:  https://files.pythonhosted.org/packages/source/a/acme/acme-%{certbot_ver}.tar.gz
 Source2:  https://files.pythonhosted.org/packages/source/c/certbot-apache/certbot_apache-%{certbot_ver}.tar.gz
@@ -85,10 +83,12 @@ Requires: %{certbot_python}-boto3         >= 1.20.34
 # when the packages are available, but installation does not fail
 # on systems where they are absent.
 # -----------------------------------------------------------------------
+%if 0%{?rhel} >= 8 || 0%{?fedora}
 Recommends: %{certbot_python}-augeas
 Recommends: %{certbot_python}-dns-lexicon >= 3.14.1
 Recommends: %{certbot_python}-google-api-python-client >= 1.6.5
 Recommends: %{certbot_python}-google-auth >= 2.16.0
+%endif
 
 # -----------------------------------------------------------------------
 # Provides — virtual package names so other specs can depend on any
@@ -317,6 +317,8 @@ fi
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Fri May 22 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-1
+- Fix spec violations: remove BuildArch noarch, guard Recommends for EL7
 * Thu May 22 2026 Jason Hempstead <git-admin@casjaysdev.pro> - 5.6.0-1
 - Initial CasjaysDev bundled release
 - Bundles certbot core, acme, apache, nginx, and all 13 DNS plugins
