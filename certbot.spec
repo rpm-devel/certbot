@@ -8,15 +8,16 @@
 #   EL7  : Python 3.10+ is NOT in standard repos — build will fail unless
 #           python3.10+ is installed from a third-party repo (e.g. IUS).
 #           EL7 is listed for completeness; skip that chroot in practice.
-#   EL8  : python3.11 is in AppStream — set as the interpreter explicitly.
-#   EL9+ : system python3 is 3.11+ — use it directly.
+#   EL8  : system python3 is 3.6 — use python3.11 from AppStream.
+#   EL9  : system python3 is 3.9 — still too old; use python3.11 from AppStream.
+#   EL10+: system python3 is 3.12+ — use it directly.
 #   Fedora: system python3 is 3.12+ — fine.
 # -----------------------------------------------------------------------
 %if 0%{?rhel} && 0%{?rhel} <= 7
 %{error: EL7 does not provide Python >= 3.10 — certbot 5.x cannot be built for EL7}
 %endif
 
-%if 0%{?rhel} && 0%{?rhel} <= 8
+%if 0%{?rhel} && 0%{?rhel} <= 9
 %global certbot_python  python3.11
 %global certbot_pybin   /usr/bin/python3.11
 %else
@@ -25,8 +26,8 @@
 %endif
 
 # Resolve the correct site-packages path for --prefix /usr.
-# On EL8, python3.11 has a default prefix of /usr/local, so plain
-# sysconfig.get_path('purelib') returns the wrong base.  Query with
+# On EL8/EL9, python3.11 may have a non-/usr default prefix, so plain
+# sysconfig.get_path('purelib') can return the wrong base.  Query with
 # explicit base=/usr to match the pip --prefix /usr used in %%install.
 %global certbot_sitelib %(%{certbot_pybin} -c "import sysconfig; print(sysconfig.get_path('purelib', vars={'base': '/usr', 'platbase': '/usr'}))" 2>/dev/null)
 
@@ -35,7 +36,7 @@
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -218,10 +219,10 @@ for f in \
 done
 
 %build
-%if 0%{?rhel} && 0%{?rhel} <= 8
-# EL8 AppStream ships setuptools 65.5.0, which rejects PEP 639 SPDX string
-# license values (e.g. "Apache-2.0") used by certbot 5.x.  Upgrade to the
-# bundled 82.0.1 wheel (Source17) before invoking pip wheel below.
+%if 0%{?rhel} && 0%{?rhel} <= 9
+# EL8/EL9 AppStream may ship a setuptools that rejects PEP 639 SPDX string
+# license values (e.g. "Apache-2.0") used by certbot 5.x (requires >= 67.0).
+# Upgrade to the bundled 82.0.1 wheel (Source17) before invoking pip wheel.
 %{certbot_pybin} -m pip install --quiet --no-index \
   --find-links %{_sourcedir} \
   --upgrade setuptools
@@ -345,6 +346,9 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-10
+- EL9: extend python3.11 and setuptools-upgrade guards from rhel<=8 to rhel<=9;
+  EL9 ships python3.9 as default which is too old for certbot 5.x (requires >=3.10)
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-9
 - Fix certbot_sitelib: pass base=/usr to sysconfig so the path matches
   pip --prefix /usr instead of python3.11's own default prefix (/usr/local)
