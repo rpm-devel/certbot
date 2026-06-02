@@ -1,4 +1,5 @@
 %global certbot_ver 5.6.0
+%global debug_package %{nil}
 
 # -----------------------------------------------------------------------
 # Python interpreter selection
@@ -28,7 +29,7 @@
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -136,42 +137,42 @@ Provides: acme                             = %{version}-%{release}
 
 # -----------------------------------------------------------------------
 # Obsoletes — replaces all pre-existing fragmented packages
-# No version qualifier = obsoletes every version ever released
+# Version-bound so a future upstream reclaim of the name would not conflict
 # -----------------------------------------------------------------------
-Obsoletes: python3-certbot
-Obsoletes: certbot-apache
-Obsoletes: python3-certbot-apache
-Obsoletes: certbot-nginx
-Obsoletes: python3-certbot-nginx
-Obsoletes: certbot-dns-cloudflare
-Obsoletes: certbot-dns-digitalocean
-Obsoletes: certbot-dns-dnsimple
-Obsoletes: certbot-dns-dnsmadeeasy
-Obsoletes: certbot-dns-gehirn
-Obsoletes: certbot-dns-google
-Obsoletes: certbot-dns-linode
-Obsoletes: certbot-dns-luadns
-Obsoletes: certbot-dns-nsone
-Obsoletes: certbot-dns-ovh
-Obsoletes: certbot-dns-rfc2136
-Obsoletes: certbot-dns-route53
-Obsoletes: certbot-dns-sakuracloud
-Obsoletes: python3-certbot-dns-cloudflare
-Obsoletes: python3-certbot-dns-digitalocean
-Obsoletes: python3-certbot-dns-dnsimple
-Obsoletes: python3-certbot-dns-dnsmadeeasy
-Obsoletes: python3-certbot-dns-gehirn
-Obsoletes: python3-certbot-dns-google
-Obsoletes: python3-certbot-dns-linode
-Obsoletes: python3-certbot-dns-luadns
-Obsoletes: python3-certbot-dns-nsone
-Obsoletes: python3-certbot-dns-ovh
-Obsoletes: python3-certbot-dns-rfc2136
-Obsoletes: python3-certbot-dns-route53
-Obsoletes: python3-certbot-dns-sakuracloud
-Obsoletes: python3-acme
-Obsoletes: acme
-Obsoletes: certbot-auto
+Obsoletes: python3-certbot                     < %{version}-%{release}
+Obsoletes: certbot-apache                      < %{version}-%{release}
+Obsoletes: python3-certbot-apache              < %{version}-%{release}
+Obsoletes: certbot-nginx                       < %{version}-%{release}
+Obsoletes: python3-certbot-nginx               < %{version}-%{release}
+Obsoletes: certbot-dns-cloudflare              < %{version}-%{release}
+Obsoletes: certbot-dns-digitalocean            < %{version}-%{release}
+Obsoletes: certbot-dns-dnsimple                < %{version}-%{release}
+Obsoletes: certbot-dns-dnsmadeeasy             < %{version}-%{release}
+Obsoletes: certbot-dns-gehirn                  < %{version}-%{release}
+Obsoletes: certbot-dns-google                  < %{version}-%{release}
+Obsoletes: certbot-dns-linode                  < %{version}-%{release}
+Obsoletes: certbot-dns-luadns                  < %{version}-%{release}
+Obsoletes: certbot-dns-nsone                   < %{version}-%{release}
+Obsoletes: certbot-dns-ovh                     < %{version}-%{release}
+Obsoletes: certbot-dns-rfc2136                 < %{version}-%{release}
+Obsoletes: certbot-dns-route53                 < %{version}-%{release}
+Obsoletes: certbot-dns-sakuracloud             < %{version}-%{release}
+Obsoletes: python3-certbot-dns-cloudflare      < %{version}-%{release}
+Obsoletes: python3-certbot-dns-digitalocean    < %{version}-%{release}
+Obsoletes: python3-certbot-dns-dnsimple        < %{version}-%{release}
+Obsoletes: python3-certbot-dns-dnsmadeeasy     < %{version}-%{release}
+Obsoletes: python3-certbot-dns-gehirn          < %{version}-%{release}
+Obsoletes: python3-certbot-dns-google          < %{version}-%{release}
+Obsoletes: python3-certbot-dns-linode          < %{version}-%{release}
+Obsoletes: python3-certbot-dns-luadns          < %{version}-%{release}
+Obsoletes: python3-certbot-dns-nsone           < %{version}-%{release}
+Obsoletes: python3-certbot-dns-ovh             < %{version}-%{release}
+Obsoletes: python3-certbot-dns-rfc2136         < %{version}-%{release}
+Obsoletes: python3-certbot-dns-route53         < %{version}-%{release}
+Obsoletes: python3-certbot-dns-sakuracloud     < %{version}-%{release}
+Obsoletes: python3-acme                        < %{version}-%{release}
+Obsoletes: acme                                < %{version}-%{release}
+Obsoletes: certbot-auto                        < %{version}-%{release}
 
 %description
 Certbot is the EFF's ACME client for automatically obtaining and renewing
@@ -321,7 +322,10 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
-* Mon Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-2
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-3
+- Add version bounds to all Obsoletes (< version-release) to silence warnings
+- Add %%global debug_package %%{nil} in spec so mock chroots suppress debuginfo
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-2
 - Add EL7 error guard for Python 3.10+ requirement
 - Add BuildRequires: systemd-rpm-macros
 - Replace raw systemctl calls with systemd_post/preun/postun_with_restart macros
