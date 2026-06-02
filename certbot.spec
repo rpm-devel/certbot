@@ -29,7 +29,7 @@
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -50,6 +50,15 @@ Source13: https://files.pythonhosted.org/packages/source/c/certbot-dns-ovh/certb
 Source14: https://files.pythonhosted.org/packages/source/c/certbot-dns-rfc2136/certbot_dns_rfc2136-%{certbot_ver}.tar.gz
 Source15: https://files.pythonhosted.org/packages/source/c/certbot-dns-route53/certbot_dns_route53-%{certbot_ver}.tar.gz
 Source16: https://files.pythonhosted.org/packages/source/c/certbot-dns-sakuracloud/certbot_dns_sakuracloud-%{certbot_ver}.tar.gz
+
+# -----------------------------------------------------------------------
+# Bundled setuptools wheel for EL8 — AppStream ships setuptools 65.5.0
+# which rejects PEP 639 SPDX string license values used by certbot 5.x.
+# setuptools >= 67.0 accepts them; 82.0.1 is the latest stable wheel.
+# Always present so spectool downloads it regardless of build host.
+# Only installed at build time on EL8 (see %%build).
+# -----------------------------------------------------------------------
+Source17: https://files.pythonhosted.org/packages/9d/76/f789f7a86709c6b087c5a2f52f911838cad707cc613162401badc665acfe/setuptools-82.0.1-py3-none-any.whl
 
 # -----------------------------------------------------------------------
 # Build dependencies
@@ -203,6 +212,15 @@ for f in \
 done
 
 %build
+%if 0%{?rhel} && 0%{?rhel} <= 8
+# EL8 AppStream ships setuptools 65.5.0, which rejects PEP 639 SPDX string
+# license values (e.g. "Apache-2.0") used by certbot 5.x.  Upgrade to the
+# bundled 82.0.1 wheel (Source17) before invoking pip wheel below.
+%{certbot_pybin} -m pip install --quiet --no-index \
+  --find-links %{_sourcedir} \
+  --upgrade setuptools
+%endif
+
 # Build each package (setuptools backend, --no-build-isolation uses the
 # system setuptools installed via BuildRequires)
 install_order=(
@@ -321,6 +339,9 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-7
+- EL8: bundle setuptools-82.0.1 wheel (Source17); upgrade before %%build to
+  fix PEP 639 SPDX string license rejection in AppStream setuptools 65.5.0
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-6
 - Remove incorrect hatchling Sources/BuildRequires/%%build block — all
   certbot 5.6.0 packages use setuptools.build_meta, not hatchling
