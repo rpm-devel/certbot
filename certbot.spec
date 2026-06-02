@@ -11,6 +11,10 @@
 #   EL9+ : system python3 is 3.11+ — use it directly.
 #   Fedora: system python3 is 3.12+ — fine.
 # -----------------------------------------------------------------------
+%if 0%{?rhel} && 0%{?rhel} <= 7
+%{error: EL7 does not provide Python >= 3.10 — certbot 5.x cannot be built for EL7}
+%endif
+
 %if 0%{?rhel} && 0%{?rhel} <= 8
 %global certbot_python  python3.11
 %global certbot_pybin   /usr/bin/python3.11
@@ -53,6 +57,7 @@ BuildRequires: %{certbot_python}
 BuildRequires: %{certbot_python}-pip
 BuildRequires: %{certbot_python}-hatchling
 BuildRequires: %{certbot_python}-setuptools
+BuildRequires: systemd-rpm-macros
 
 # -----------------------------------------------------------------------
 # Runtime — core deps available as system RPMs on EL8+/Fedora
@@ -228,6 +233,7 @@ for pkg_dir in "${install_order[@]}"; do
 done
 
 %install
+%{__rm} -rf %{buildroot}
 # Install all built wheels into buildroot
 for wheel in %{_builddir}/wheels/*.whl; do
   %{certbot_pybin} -m pip install \
@@ -265,15 +271,13 @@ WantedBy=timers.target
 UNIT
 
 %post
-# Enable renewal timer on fresh install
-if [ $1 -eq 1 ]; then
-  systemctl enable --now certbot-renew.timer &>/dev/null || true
-fi
+%systemd_post certbot-renew.service certbot-renew.timer
 
 %preun
-if [ $1 -eq 0 ]; then
-  systemctl disable --now certbot-renew.timer &>/dev/null || true
-fi
+%systemd_preun certbot-renew.service certbot-renew.timer
+
+%postun
+%systemd_postun_with_restart certbot-renew.service certbot-renew.timer
 
 %files
 %license LICENSE.txt
@@ -317,9 +321,16 @@ fi
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Mon Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-2
+- Add EL7 error guard for Python 3.10+ requirement
+- Add BuildRequires: systemd-rpm-macros
+- Replace raw systemctl calls with systemd_post/preun/postun_with_restart macros
+- Add %postun section with systemd_postun_with_restart
+- Add %{__rm} -rf %{buildroot} at top of %install
+- Fix bogus Thu weekday in changelog (May 22 2026 is Friday)
 * Fri May 22 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-1
 - Fix spec violations: remove BuildArch noarch, guard Recommends for EL7
-* Thu May 22 2026 Jason Hempstead <git-admin@casjaysdev.pro> - 5.6.0-1
+* Fri May 22 2026 Jason Hempstead <git-admin@casjaysdev.pro> - 5.6.0-1
 - Initial CasjaysDev bundled release
 - Bundles certbot core, acme, apache, nginx, and all 13 DNS plugins
 - Obsoletes all fragmented certbot-* and python3-certbot-* packages
