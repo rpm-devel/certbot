@@ -24,17 +24,18 @@
 %global certbot_pybin   %{__python3}
 %endif
 
-# Resolve the correct site-packages path for the chosen interpreter.
-# On EL8, %{python3_sitelib} points to python3.6; we use python3.11,
-# so we must query the interpreter directly.
-%global certbot_sitelib %(%{certbot_pybin} -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null)
+# Resolve the correct site-packages path for --prefix /usr.
+# On EL8, python3.11 has a default prefix of /usr/local, so plain
+# sysconfig.get_path('purelib') returns the wrong base.  Query with
+# explicit base=/usr to match the pip --prefix /usr used in %%install.
+%global certbot_sitelib %(%{certbot_pybin} -c "import sysconfig; print(sysconfig.get_path('purelib', vars={'base': '/usr', 'platbase': '/usr'}))" 2>/dev/null)
 
 # -----------------------------------------------------------------------
 # Source tarballs — certbot core, acme library, and all official plugins
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -344,6 +345,9 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-9
+- Fix certbot_sitelib: pass base=/usr to sysconfig so the path matches
+  pip --prefix /usr instead of python3.11's own default prefix (/usr/local)
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-8
 - Fix %%files: use certbot_sitelib macro (resolved from interpreter) instead
   of %%{python3_sitelib} which points to python3.6 on EL8
