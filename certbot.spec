@@ -24,12 +24,17 @@
 %global certbot_pybin   %{__python3}
 %endif
 
+# Resolve the correct site-packages path for the chosen interpreter.
+# On EL8, %{python3_sitelib} points to python3.6; we use python3.11,
+# so we must query the interpreter directly.
+%global certbot_sitelib %(%{certbot_pybin} -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null)
+
 # -----------------------------------------------------------------------
 # Source tarballs — certbot core, acme library, and all official plugins
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -301,44 +306,47 @@ UNIT
 %license LICENSE.txt
 %doc README.rst
 %{_bindir}/certbot
-%{python3_sitelib}/certbot/
-%{python3_sitelib}/certbot-*.dist-info/
-%{python3_sitelib}/acme/
-%{python3_sitelib}/acme-*.dist-info/
-%{python3_sitelib}/certbot_apache/
-%{python3_sitelib}/certbot_apache-*.dist-info/
-%{python3_sitelib}/certbot_nginx/
-%{python3_sitelib}/certbot_nginx-*.dist-info/
-%{python3_sitelib}/certbot_dns_cloudflare/
-%{python3_sitelib}/certbot_dns_cloudflare-*.dist-info/
-%{python3_sitelib}/certbot_dns_digitalocean/
-%{python3_sitelib}/certbot_dns_digitalocean-*.dist-info/
-%{python3_sitelib}/certbot_dns_dnsimple/
-%{python3_sitelib}/certbot_dns_dnsimple-*.dist-info/
-%{python3_sitelib}/certbot_dns_dnsmadeeasy/
-%{python3_sitelib}/certbot_dns_dnsmadeeasy-*.dist-info/
-%{python3_sitelib}/certbot_dns_gehirn/
-%{python3_sitelib}/certbot_dns_gehirn-*.dist-info/
-%{python3_sitelib}/certbot_dns_google/
-%{python3_sitelib}/certbot_dns_google-*.dist-info/
-%{python3_sitelib}/certbot_dns_linode/
-%{python3_sitelib}/certbot_dns_linode-*.dist-info/
-%{python3_sitelib}/certbot_dns_luadns/
-%{python3_sitelib}/certbot_dns_luadns-*.dist-info/
-%{python3_sitelib}/certbot_dns_nsone/
-%{python3_sitelib}/certbot_dns_nsone-*.dist-info/
-%{python3_sitelib}/certbot_dns_ovh/
-%{python3_sitelib}/certbot_dns_ovh-*.dist-info/
-%{python3_sitelib}/certbot_dns_rfc2136/
-%{python3_sitelib}/certbot_dns_rfc2136-*.dist-info/
-%{python3_sitelib}/certbot_dns_route53/
-%{python3_sitelib}/certbot_dns_route53-*.dist-info/
-%{python3_sitelib}/certbot_dns_sakuracloud/
-%{python3_sitelib}/certbot_dns_sakuracloud-*.dist-info/
+%{certbot_sitelib}/certbot/
+%{certbot_sitelib}/certbot-*.dist-info/
+%{certbot_sitelib}/acme/
+%{certbot_sitelib}/acme-*.dist-info/
+%{certbot_sitelib}/certbot_apache/
+%{certbot_sitelib}/certbot_apache-*.dist-info/
+%{certbot_sitelib}/certbot_nginx/
+%{certbot_sitelib}/certbot_nginx-*.dist-info/
+%{certbot_sitelib}/certbot_dns_cloudflare/
+%{certbot_sitelib}/certbot_dns_cloudflare-*.dist-info/
+%{certbot_sitelib}/certbot_dns_digitalocean/
+%{certbot_sitelib}/certbot_dns_digitalocean-*.dist-info/
+%{certbot_sitelib}/certbot_dns_dnsimple/
+%{certbot_sitelib}/certbot_dns_dnsimple-*.dist-info/
+%{certbot_sitelib}/certbot_dns_dnsmadeeasy/
+%{certbot_sitelib}/certbot_dns_dnsmadeeasy-*.dist-info/
+%{certbot_sitelib}/certbot_dns_gehirn/
+%{certbot_sitelib}/certbot_dns_gehirn-*.dist-info/
+%{certbot_sitelib}/certbot_dns_google/
+%{certbot_sitelib}/certbot_dns_google-*.dist-info/
+%{certbot_sitelib}/certbot_dns_linode/
+%{certbot_sitelib}/certbot_dns_linode-*.dist-info/
+%{certbot_sitelib}/certbot_dns_luadns/
+%{certbot_sitelib}/certbot_dns_luadns-*.dist-info/
+%{certbot_sitelib}/certbot_dns_nsone/
+%{certbot_sitelib}/certbot_dns_nsone-*.dist-info/
+%{certbot_sitelib}/certbot_dns_ovh/
+%{certbot_sitelib}/certbot_dns_ovh-*.dist-info/
+%{certbot_sitelib}/certbot_dns_rfc2136/
+%{certbot_sitelib}/certbot_dns_rfc2136-*.dist-info/
+%{certbot_sitelib}/certbot_dns_route53/
+%{certbot_sitelib}/certbot_dns_route53-*.dist-info/
+%{certbot_sitelib}/certbot_dns_sakuracloud/
+%{certbot_sitelib}/certbot_dns_sakuracloud-*.dist-info/
 %{_unitdir}/certbot-renew.service
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-8
+- Fix %%files: use certbot_sitelib macro (resolved from interpreter) instead
+  of %%{python3_sitelib} which points to python3.6 on EL8
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-7
 - EL8: bundle setuptools-82.0.1 wheel (Source17); upgrade before %%build to
   fix PEP 639 SPDX string license rejection in AppStream setuptools 65.5.0
