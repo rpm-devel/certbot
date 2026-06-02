@@ -29,7 +29,7 @@
 # -----------------------------------------------------------------------
 Name:           certbot
 Version:        %{certbot_ver}
-Release:        3%{?dist}
+Release:        5%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
@@ -52,13 +52,25 @@ Source15: https://files.pythonhosted.org/packages/source/c/certbot-dns-route53/c
 Source16: https://files.pythonhosted.org/packages/source/c/certbot-dns-sakuracloud/certbot_dns_sakuracloud-%{certbot_ver}.tar.gz
 
 # -----------------------------------------------------------------------
+# Bundled hatchling wheels for EL8 — hatchling is not packaged as an RPM
+# on EL8; these wheels are installed locally in %%build when %%rhel == 8
+# -----------------------------------------------------------------------
+Source17: https://files.pythonhosted.org/packages/56/49/2797ec0ef88008a653a8867bb8d1e5c223cd2df8e40390dd5c6a0279cbc5/hatchling-1.30.1-py3-none-any.whl
+Source18: https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl
+Source19: https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl
+Source20: https://files.pythonhosted.org/packages/df/b2/87e62e8c3e2f4b32e5fe99e0b86d576da1312593b39f47d8ceef365e95ed/packaging-26.2-py3-none-any.whl
+Source21: https://files.pythonhosted.org/packages/7c/a4/81502f486f01db95bc8320646a8a12511f5e556cb63d5e224d91816605c4/trove_classifiers-2026.6.1.19-py3-none-any.whl
+
+# -----------------------------------------------------------------------
 # Build dependencies
 # -----------------------------------------------------------------------
 BuildRequires: %{certbot_python}
 BuildRequires: %{certbot_python}-pip
-BuildRequires: %{certbot_python}-hatchling
 BuildRequires: %{certbot_python}-setuptools
 BuildRequires: systemd-rpm-macros
+%if 0%{?rhel} != 8
+BuildRequires: %{certbot_python}-hatchling
+%endif
 
 # -----------------------------------------------------------------------
 # Runtime — core deps available as system RPMs on EL8+/Fedora
@@ -204,8 +216,14 @@ for f in \
 done
 
 %build
-# Build each package (hatchling backend, no isolation needed since
-# hatchling is listed as a BuildRequires)
+%if 0%{?rhel} == 8
+# hatchling is not packaged as an RPM on EL8; install from bundled wheels
+%{certbot_pybin} -m pip install --quiet --no-index \
+  --find-links %{_sourcedir} \
+  hatchling pathspec pluggy packaging trove_classifiers
+%endif
+# Build each package (hatchling backend, --no-build-isolation so hatchling
+# installed above or via BuildRequires is used directly)
 install_order=(
   acme-%{certbot_ver}
   certbot-%{certbot_ver}
@@ -322,6 +340,14 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-5
+- EL8: bundle hatchling + deps (pathspec, pluggy, packaging, trove-classifiers)
+  as wheel Sources (17-21); install offline via --no-index --find-links in
+  %%build to avoid needing network access inside the mock chroot
+- Use real hash-based PyPI URLs for reproducible spectool downloads
+* Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-4
+- EL8: drop python3.11-hatchling BuildRequires (not packaged); pip install
+  hatchling at %%build time instead — %%no-build-isolation still satisfied
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-3
 - Add version bounds to all Obsoletes (< version-release) to silence warnings
 - Add %%global debug_package %%{nil} in spec so mock chroots suppress debuginfo
@@ -329,8 +355,8 @@ UNIT
 - Add EL7 error guard for Python 3.10+ requirement
 - Add BuildRequires: systemd-rpm-macros
 - Replace raw systemctl calls with systemd_post/preun/postun_with_restart macros
-- Add %postun section with systemd_postun_with_restart
-- Add %{__rm} -rf %{buildroot} at top of %install
+- Add %%postun section with systemd_postun_with_restart
+- Add %%{__rm} -rf %%{buildroot} at top of %%install
 - Fix bogus Thu weekday in changelog (May 22 2026 is Friday)
 * Fri May 22 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-1
 - Fix spec violations: remove BuildArch noarch, guard Recommends for EL7
