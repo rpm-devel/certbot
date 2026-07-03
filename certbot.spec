@@ -40,6 +40,7 @@ Release:        10%{?dist}
 Summary:        EFF ACME client with all official plugins
 License:        Apache-2.0
 URL:            https://certbot.eff.org
+ExclusiveArch:  x86_64 aarch64
 Source0:  https://files.pythonhosted.org/packages/source/c/certbot/certbot-%{certbot_ver}.tar.gz
 Source1:  https://files.pythonhosted.org/packages/source/a/acme/acme-%{certbot_ver}.tar.gz
 Source2:  https://files.pythonhosted.org/packages/source/c/certbot-apache/certbot_apache-%{certbot_ver}.tar.gz
@@ -258,7 +259,6 @@ for pkg_dir in "${install_order[@]}"; do
 done
 
 %install
-%{__rm} -rf %{buildroot}
 # Install all built wheels into buildroot
 for wheel in %{_builddir}/wheels/*.whl; do
   %{certbot_pybin} -m pip install \
@@ -346,6 +346,10 @@ UNIT
 %{_unitdir}/certbot-renew.timer
 
 %changelog
+* Thu Jul 03 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-10
+- Source0: PyPI URL verified (5.6.0 is current)
+- ExclusiveArch: x86_64 aarch64
+
 * Tue Jun  2 2026 CasjaysDev <rpm-devel@casjaysdev.pro> - 5.6.0-10
 - EL9: extend python3.11 and setuptools-upgrade guards from rhel<=8 to rhel<=9;
   EL9 ships python3.9 as default which is too old for certbot 5.x (requires >=3.10)
