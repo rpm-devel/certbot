@@ -155,6 +155,26 @@ build/
 dist/
 out/
 
+# Downloaded upstream sources (fetched by spectool/rpmbuild.sh, never committed)
+acme-*.tar.gz
+certbot_apache-*.tar.gz
+certbot_dns_cloudflare-*.tar.gz
+certbot_dns_digitalocean-*.tar.gz
+certbot_dns_dnsimple-*.tar.gz
+certbot_dns_dnsmadeeasy-*.tar.gz
+certbot_dns_gehirn-*.tar.gz
+certbot_dns_google-*.tar.gz
+certbot_dns_linode-*.tar.gz
+certbot_dns_luadns-*.tar.gz
+certbot_dns_nsone-*.tar.gz
+certbot_dns_ovh-*.tar.gz
+certbot_dns_rfc2136-*.tar.gz
+certbot_dns_route53-*.tar.gz
+certbot_dns_sakuracloud-*.tar.gz
+certbot_nginx-*.tar.gz
+certbot-*.tar.gz
+setuptools-82.0.1-py3-none-any.whl
+
 # Rust
 target/
 
